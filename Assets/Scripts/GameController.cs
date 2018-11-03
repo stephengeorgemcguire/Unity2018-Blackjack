@@ -10,6 +10,10 @@ public class GameController : MonoBehaviour
     public Deck Dealer;
     public Deck Deck;
 
+    private const bool ON = true;
+    private const bool OFF = false;
+
+
     public Button HitButton;
     public Button HoldButton;
     public Button PlayAgainButton;
@@ -36,16 +40,88 @@ public class GameController : MonoBehaviour
 
     private void Start()
     {
-        DealHand();
+        Bank = InitialBank;
+        Play();
     }
 
     #region Player Actions
+    public void Play()
+    {
+        InitializeDeal();
+        if ( Deck.CardCount < 15 )
+            Deck.Reset();
 
+        DealHand();
+
+    }
+
+    private void InitializeDeal()
+    {
+        ClearHands();
+        ResetResults();
+        PlayerBust = false;
+        if ( Bank <= 0 )
+        {
+            ToggleButton( PlayAgainButton, false );
+            return;
+        }
+        handsPlayed++;
+        Bank = Bank < Bet ? Bank : Bank -= Bet;
+
+
+    }
+    private void DealHand()
+    {
+        InitializeDeal();
+        for ( int i = 0 ; i < 2 ; i++ )
+        {
+            HitPlayer();
+            HitDealer();
+        }
+
+        // Blackjack only on first two cards
+        if ( IsBlackjack() )
+            InitializeDeal();
+
+        int card1Idx = Player.deck[ 0 ];
+        int card2Idx = Player.deck[ 1 ];
+        if ( Player.GetCardRank( card1Idx ) == Player.GetCardRank( card2Idx ) )
+            ToggleButton( SplitButton, true );
+    }
     public void HitPlayer()
     {
+        ToggleButton( DoubleDownButton, OFF );
         Player.Push( Deck.Pop() );
         HandStatus();
     }
+
+
+
+    public void DoubleDown()
+    {
+
+        HitPlayer();    // Player gets one card
+        Hold();
+    }
+
+    public void Hold()
+    {
+        InitializePlayButtons( false );
+        ShowDealerHand();
+        StartCoroutine( DealerPlay() );
+        DetermineWinner();
+        UpdateStats();
+
+    }
+
+    public void Split()
+    {
+        // TODO:
+    }
+
+
+
+
 
     private void HandStatus()
     {
@@ -58,53 +134,6 @@ public class GameController : MonoBehaviour
             Hold();
         }
     }
-
-    public void DoubleDown()
-    {
-        HitPlayer();    // Player gets one card
-
-        Hold();
-    }
-
-    public void Hold()
-    {
-        TurnOnPlayButtons( false );
-        ShowDealerHand();
-        StartCoroutine( DealerPlay() );
-        DetermineWinner();
-        UpdateStats();
-    }
-
-    private void UpdateStats()
-    {
-
-    }
-
-    private void ShowDealerHand()
-    {
-        DeckView cardView = Dealer.GetComponent<DeckView>();
-        cardView.ShowHand();
-    }
-
-    public void Split()
-    {
-        // TODO:
-    }
-
-    public void PlayAgain()
-    {
-        ResetResults();
-        ClearHands();
-
-        TurnOnPlayButtons( true );
-
-        if ( Deck.CardCount < 15 )
-            Deck.Reset();
-
-        DealHand();
-
-    }
-
     public void QuitGame()
     {
         // TODO:
@@ -113,6 +142,19 @@ public class GameController : MonoBehaviour
     #endregion
 
     #region Game Play Actions
+
+    private void ToggleButton( Button button, bool toggle )
+    {
+        button.interactable = toggle;
+    }
+
+
+    private void ShowDealerHand()
+    {
+        DeckView cardView = Dealer.GetComponent<DeckView>();
+        cardView.ShowHand();
+    }
+
     private void ClearHands()
     {
 
@@ -120,6 +162,16 @@ public class GameController : MonoBehaviour
         Dealer.GetComponent<DeckView>().ClearHand();
     }
 
+    private void InitializePlayButtons( bool isInteractable )
+    {
+        // These are the initial states of the Player buttons before each hand
+        ToggleButton( HitButton, isInteractable );
+        ToggleButton( HoldButton, isInteractable );
+        ToggleButton( DoubleDownButton, isInteractable );
+
+        ToggleButton( SplitButton, false );
+        ToggleButton( PlayAgainButton, !isInteractable );
+    }
     private void ResetResults()
     {
         PlayerScore.text = "";
@@ -127,37 +179,29 @@ public class GameController : MonoBehaviour
         GameResult.text = "";
         CurrentBet.text = Bet.ToString();
     }
-
-
-    private void DealHand()
-    {
-        TurnOnPlayButtons( true );
-        PlayerBust = false;
-        handsPlayed++;
-        Bank -= Bet;
-        for ( int i = 0 ; i < 2 ; i++ )
-        {
-            HitPlayer();
-            HitDealer();
-        }
-        if ( IsBlackjack() )
-            TurnOnPlayButtons( false );
-    }
-
     private void ToggleView( int cardIdx )
     {
         DeckView cardView = Dealer.GetComponent<DeckView>();
         cardView.Toggle( cardIdx, true );
     }
 
-    private void TurnOnPlayButtons( bool isInteractable )
+    private bool IsBlackjack()
     {
-        HitButton.interactable = isInteractable;
-        HoldButton.interactable = isInteractable;
-        DoubleDownButton.interactable = isInteractable;
-        SplitButton.interactable = isInteractable;
-        PlayAgainButton.interactable = !isInteractable;
+        bool isBlackjack = true;
+
+        if ( Player.HandValue() == 21 && Dealer.HandValue() == 21 )
+            Push();
+        else if ( Player.HandValue() == 21 )
+            BlackJack();
+        else if ( Dealer.HandValue() == 21 )
+            Lose();
+        else
+            isBlackjack = false;
+
+        return isBlackjack;
     }
+
+
     #endregion
 
     #region Dealer Actions
@@ -187,49 +231,34 @@ public class GameController : MonoBehaviour
     #endregion
 
     #region Game Results
-
-    private bool IsBlackjack()
+    private void UpdateStats()
     {
-        bool isBlackjack = true;
 
-        if ( Player.HandValue() == 21 && Dealer.HandValue() == 21 )
-            Push();
-        else if ( Player.HandValue() == 21 )
-            BlackJack();
-        else if ( Dealer.HandValue() == 21 )
-            PlayerLoses();
-        else
-            isBlackjack = false;
-
-        return isBlackjack;
     }
 
-    private void BlackJack()
-    {
-        PlayerWins( (float)2.5 );
-    }
+
     private void DetermineWinner()
     {
         if ( Player.HandValue() > 21 )
-            PlayerLoses();
+            Lose();
         else if ( Dealer.HandValue() > 21 )
         {
-            PlayerWins();
+            Win();
         }
         else
         {
             if ( Player.HandValue() == Dealer.HandValue() )
                 Push();
             else if ( Player.HandValue() > Dealer.HandValue() )
-                PlayerWins();
+                Win();
             else
-                PlayerLoses();
+                Lose();
         }
-        WinningPct.text = ((float)handsWon / (float)handsPlayed).ToString();
+        WinningPct.text = (((float)handsWon / (float)handsPlayed) * 100.00).ToString( "0.00" );
 
     }
 
-    private void PlayerLoses()
+    private void Lose()
     {
         GameResult.color = Color.red;
         GameResult.text = "Lose";
@@ -243,9 +272,15 @@ public class GameController : MonoBehaviour
         GameResult.text = "Push";
     }
 
-    private void PlayerWins( float payoff = (float)2.0 )
+    private void BlackJack()
     {
-        Bank += Bet * payoff;
+        // Blackjack pays out 2.5 times the original bet
+        Win( (float)2.5 );
+    }
+
+    private void Win( float payOff = (float)2.0 )
+    {
+        Bank += Bet * payOff;
         handsWon++;
         GameResult.color = Color.green;
         GameResult.text = "Win!";

@@ -72,6 +72,10 @@ public class Deck : MonoBehaviour
         }
     }
 
+    public int GetCardRank( int cardIdx )
+    {
+        return cardIdx % 13;
+    }
     public int HandValue()
     {
         int total = 0;
@@ -79,7 +83,8 @@ public class Deck : MonoBehaviour
 
         foreach ( int cardIdx in GetCards() )
         {
-            int cardRank = cardIdx % 13;    // 13 cards in each suit
+
+            int cardRank = GetCardRank( cardIdx );    // 13 cards in each suit
 
             if ( cardRank == 0 ) // Ace == 0
                 aces++;
