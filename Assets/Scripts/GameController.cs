@@ -19,20 +19,20 @@ public class GameController : MonoBehaviour
     public Text PlayerScore;
     public Text DealerScore;
     public Text GameResult;
-    public Text WagerResult;
-    public Text CurrentWager;
-    public Text CurrentBank;
+    public Text BankTxt { get; set; }
+    public Text CurrentBet;
     public Text WinningPct;
 
     private float BeginningPurse;
-    private float Purse;
-    public float Wager;
+    private float Bank;
+    public float Bet;
     public float InitialBank;
     private float HandResult;
 
-    private int handsPlayed;
-    private int handsWon;
 
+    private int handsPlayed = 0;
+    private int handsWon = 0;
+    private bool PlayerBust { get; set; }
 
     private void Start()
     {
@@ -44,24 +44,46 @@ public class GameController : MonoBehaviour
     public void HitPlayer()
     {
         Player.Push( Deck.Pop() );
+        HandStatus();
+    }
+
+    private void HandStatus()
+    {
         PlayerScore.text = Player.HandValue().ToString();
-        if ( Player.HandValue() > 21 )
+        if ( Player.HandValue() == 21 )
+            Hold();
+        else if ( Player.HandValue() > 21 )
         {
-            TogglePlayButtons( false );
-            DetermineWinner();
+            PlayerBust = true;
+            Hold();
         }
     }
 
     public void DoubleDown()
     {
-        TogglePlayButtons( false );
         HitPlayer();    // Player gets one card
+
+        Hold();
     }
 
     public void Hold()
     {
-        TogglePlayButtons( false );
+        TurnOnPlayButtons( false );
+        ShowDealerHand();
         StartCoroutine( DealerPlay() );
+        DetermineWinner();
+        UpdateStats();
+    }
+
+    private void UpdateStats()
+    {
+
+    }
+
+    private void ShowDealerHand()
+    {
+        DeckView cardView = Dealer.GetComponent<DeckView>();
+        cardView.ShowHand();
     }
 
     public void Split()
@@ -74,7 +96,7 @@ public class GameController : MonoBehaviour
         ResetResults();
         ClearHands();
 
-        TogglePlayButtons( true );
+        TurnOnPlayButtons( true );
 
         if ( Deck.CardCount < 15 )
             Deck.Reset();
@@ -103,21 +125,23 @@ public class GameController : MonoBehaviour
         PlayerScore.text = "";
         DealerScore.text = "";
         GameResult.text = "";
-        WagerResult.text = "";
+        CurrentBet.text = Bet.ToString();
     }
 
-    #endregion
+
     private void DealHand()
     {
+        TurnOnPlayButtons( true );
+        PlayerBust = false;
         handsPlayed++;
-        Purse -= Wager;
+        Bank -= Bet;
         for ( int i = 0 ; i < 2 ; i++ )
         {
             HitPlayer();
             HitDealer();
         }
         if ( IsBlackjack() )
-            TogglePlayButtons( false );
+            TurnOnPlayButtons( false );
     }
 
     private void ToggleView( int cardIdx )
@@ -126,7 +150,7 @@ public class GameController : MonoBehaviour
         cardView.Toggle( cardIdx, true );
     }
 
-    private void TogglePlayButtons( bool isInteractable )
+    private void TurnOnPlayButtons( bool isInteractable )
     {
         HitButton.interactable = isInteractable;
         HoldButton.interactable = isInteractable;
@@ -134,7 +158,7 @@ public class GameController : MonoBehaviour
         SplitButton.interactable = isInteractable;
         PlayAgainButton.interactable = !isInteractable;
     }
-
+    #endregion
 
     #region Dealer Actions
     private void HitDealer()
@@ -149,18 +173,16 @@ public class GameController : MonoBehaviour
     }
     IEnumerator DealerPlay()
     {
-        //ToggleView( Dealer.deck. );  // Show the dealers first card
-
-        DeckView cardView = Dealer.GetComponent<DeckView>();
-        cardView.ShowHand();
-        while ( Dealer.HandValue() < 17 )
+        if ( !PlayerBust )
         {
+            while ( Dealer.HandValue() < 17 )
+            {
 
-            HitDealer();
-            DealerScore.text = Dealer.HandValue().ToString();
-            yield return new WaitForSeconds( 1f );
+                HitDealer();
+                DealerScore.text = Dealer.HandValue().ToString();
+                yield return new WaitForSeconds( 1f );
+            }
         }
-        DetermineWinner();
     }
     #endregion
 
@@ -184,14 +206,16 @@ public class GameController : MonoBehaviour
 
     private void BlackJack()
     {
-        HandResult = Wager * (float)2.5;
+        PlayerWins( (float)2.5 );
     }
     private void DetermineWinner()
     {
         if ( Player.HandValue() > 21 )
             PlayerLoses();
         else if ( Dealer.HandValue() > 21 )
+        {
             PlayerWins();
+        }
         else
         {
             if ( Player.HandValue() == Dealer.HandValue() )
@@ -201,6 +225,7 @@ public class GameController : MonoBehaviour
             else
                 PlayerLoses();
         }
+        WinningPct.text = ((float)handsWon / (float)handsPlayed).ToString();
 
     }
 
@@ -212,15 +237,16 @@ public class GameController : MonoBehaviour
 
     private void Push()
     {
-        Purse += Wager;
+        Bank += Bet;
+        handsPlayed--;
         GameResult.color = Color.white;
         GameResult.text = "Push";
-
     }
 
-    private void PlayerWins()
+    private void PlayerWins( float payoff = (float)2.0 )
     {
-        Purse += Wager * 2;
+        Bank += Bet * payoff;
+        handsWon++;
         GameResult.color = Color.green;
         GameResult.text = "Win!";
     }
