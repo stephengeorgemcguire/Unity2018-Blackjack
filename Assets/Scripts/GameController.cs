@@ -1,4 +1,5 @@
-﻿using System.Collections;
+﻿using System;
+using System.Collections;
 
 using UnityEngine;
 using UnityEngine.UI;
@@ -23,7 +24,7 @@ public class GameController : MonoBehaviour
     public Text PlayerScore;
     public Text DealerScore;
     public Text GameResult;
-    public Text BankTxt { get; set; }
+    public Text BankValue;
     public Text CurrentBet;
     public Text WinningPct;
 
@@ -53,65 +54,123 @@ public class GameController : MonoBehaviour
 
         DealHand();
 
+
+        if ( !canSplit() )
+            ToggleButton( SplitButton, OFF );
+
+
+        if ( IsBlackjack() )
+        {
+            TogglePlayButtons( OFF );
+            ToggleButton( PlayAgainButton, ON );
+            return;
+        }
+        // See if we can split the hand
+        HandStatus();
+
+
     }
 
     private void InitializeDeal()
     {
         ClearHands();
         ResetResults();
+        TogglePlayButtons( ON );
+        ToggleButton( PlayAgainButton, OFF );
+
         PlayerBust = false;
-        if ( Bank <= 0 )
+        if ( Bank > 0 ) // If we have money in the bank
         {
-            ToggleButton( PlayAgainButton, false );
+            // If we can not cover the bet, use whatever is left in the bank
+            Bank = Bank < Bet ? Bank : Bank -= Bet;
+            updateBankDisplay();
+        }
+        else
+        {
+            ToggleButton( PlayAgainButton, OFF );
             return;
         }
-        handsPlayed++;
-        Bank = Bank < Bet ? Bank : Bank -= Bet;
+
+
 
 
     }
     private void DealHand()
     {
-        InitializeDeal();
-        for ( int i = 0 ; i < 2 ; i++ )
+        try
         {
-            HitPlayer();
-            HitDealer();
+            handsPlayed++;
+            for ( int i = 0 ; i < 2 ; i++ )
+            {
+                HitPlayer();
+                HitDealer();
+            }
         }
+        catch ( ApplicationException ex )
+        {
+            throw new ApplicationException( "GameController.cs - DealHand()", ex );
+        }
+    }
 
-        // Blackjack only on first two cards
-        if ( IsBlackjack() )
-            InitializeDeal();
+    private bool canSplit()
+    {
+        try
+        {
 
-        int card1Idx = Player.deck[ 0 ];
-        int card2Idx = Player.deck[ 1 ];
-        if ( Player.GetCardRank( card1Idx ) == Player.GetCardRank( card2Idx ) )
-            ToggleButton( SplitButton, true );
+
+            if ( Player.deck == null )
+                return false;
+
+            int card1 = Player.deck[ 0 ];
+            int card2 = Player.deck[ 1 ];
+
+            card1 = Player.GetCardRank( card1 );
+            card2 = Player.GetCardRank( card2 );
+
+            return (card1 == card2);
+        }
+        catch ( ApplicationException ex )
+        {
+            throw new ApplicationException( "GameController.cs - canSplit(): ", ex );
+        }
+    }
+
+    public void Hit()
+    {
+        HitPlayer();
+        ToggleButton( DoubleDownButton, OFF );
+        HandStatus();
+
+
     }
     public void HitPlayer()
     {
-        ToggleButton( DoubleDownButton, OFF );
+
         Player.Push( Deck.Pop() );
-        HandStatus();
+
+
+
     }
 
 
 
     public void DoubleDown()
     {
-
-        HitPlayer();    // Player gets one card
+        Bet += Bet;
+        Bank -= Bet;
+        updateBankDisplay();
+        Hit();    // Player gets one card
         Hold();
     }
 
     public void Hold()
     {
-        InitializePlayButtons( false );
+        TogglePlayButtons( OFF );
+
         ShowDealerHand();
         StartCoroutine( DealerPlay() );
-        DetermineWinner();
-        UpdateStats();
-
+        //DealerPlay();
+        ToggleButton( PlayAgainButton, ON );
     }
 
     public void Split()
@@ -119,16 +178,13 @@ public class GameController : MonoBehaviour
         // TODO:
     }
 
-
-
-
-
     private void HandStatus()
     {
-        PlayerScore.text = Player.HandValue().ToString();
-        if ( Player.HandValue() == 21 )
+        int handValue = Player.HandValue();
+        PlayerScore.text = handValue.ToString();
+        if ( handValue == 21 )
             Hold();
-        else if ( Player.HandValue() > 21 )
+        else if ( handValue > 21 )
         {
             PlayerBust = true;
             Hold();
@@ -157,20 +213,27 @@ public class GameController : MonoBehaviour
 
     private void ClearHands()
     {
+        try
+        {
 
-        Player.GetComponent<DeckView>().ClearHand();
-        Dealer.GetComponent<DeckView>().ClearHand();
+            Player.GetComponent<DeckView>().ClearHand();
+            Dealer.GetComponent<DeckView>().ClearHand();
+        }
+        catch ( Exception ex )
+        {
+            throw new ApplicationException( "GameController.cs - ClearHands(): ", ex );
+        }
     }
 
-    private void InitializePlayButtons( bool isInteractable )
+    private void TogglePlayButtons( bool isInteractable )
     {
         // These are the initial states of the Player buttons before each hand
         ToggleButton( HitButton, isInteractable );
         ToggleButton( HoldButton, isInteractable );
         ToggleButton( DoubleDownButton, isInteractable );
+        ToggleButton( PlayAgainButton, isInteractable );
+        ToggleButton( SplitButton, isInteractable );
 
-        ToggleButton( SplitButton, false );
-        ToggleButton( PlayAgainButton, !isInteractable );
     }
     private void ResetResults()
     {
@@ -192,7 +255,7 @@ public class GameController : MonoBehaviour
         if ( Player.HandValue() == 21 && Dealer.HandValue() == 21 )
             Push();
         else if ( Player.HandValue() == 21 )
-            BlackJack();
+            Win( 2.5f );
         else if ( Dealer.HandValue() == 21 )
             Lose();
         else
@@ -219,21 +282,45 @@ public class GameController : MonoBehaviour
     {
         if ( !PlayerBust )
         {
+            int firstCard = Dealer.deck[ 0 ];
+            ToggleView( firstCard );
+            updateDealerScore();
             while ( Dealer.HandValue() < 17 )
             {
-
                 HitDealer();
-                DealerScore.text = Dealer.HandValue().ToString();
+                updateDealerScore();
+
                 yield return new WaitForSeconds( 1f );
             }
         }
+        EndGame();
+    }
+
+    private void updateDealerScore()
+    {
+        DealerScore.text = Dealer.HandValue().ToString();
+    }
+
+    private void EndGame()
+    {
+        DetermineWinner();
+        UpdateStats();
     }
     #endregion
 
     #region Game Results
     private void UpdateStats()
     {
+        try
+        {
+            if ( handsPlayed > 0 )
+                WinningPct.text = (((float)handsWon / (float)handsPlayed) * 100.00).ToString( "0.00" ) + "%";
 
+        }
+        catch ( Exception ex )
+        {
+            throw new ApplicationException( string.Format( "Can not calculate Winning %.  HandsPlayed: {0}; HandsWon: {1}. GameController.cs - UpdateStats() ", (int)handsPlayed, (int)handsWon ), ex );
+        }
     }
 
 
@@ -245,7 +332,7 @@ public class GameController : MonoBehaviour
         {
             Win();
         }
-        else
+        else // Dealer and Player are still in
         {
             if ( Player.HandValue() == Dealer.HandValue() )
                 Push();
@@ -254,7 +341,7 @@ public class GameController : MonoBehaviour
             else
                 Lose();
         }
-        WinningPct.text = (((float)handsWon / (float)handsPlayed) * 100.00).ToString( "0.00" );
+
 
     }
 
@@ -267,6 +354,7 @@ public class GameController : MonoBehaviour
     private void Push()
     {
         Bank += Bet;
+        updateBankDisplay();
         handsPlayed--;
         GameResult.color = Color.white;
         GameResult.text = "Push";
@@ -280,10 +368,16 @@ public class GameController : MonoBehaviour
 
     private void Win( float payOff = (float)2.0 )
     {
-        Bank += Bet * payOff;
+        Bank += (Bet * payOff);
+        updateBankDisplay();
         handsWon++;
         GameResult.color = Color.green;
         GameResult.text = "Win!";
+    }
+
+    private void updateBankDisplay()
+    {
+        BankValue.text = Bank.ToString( "$0.00" );
     }
     #endregion
 }

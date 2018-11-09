@@ -47,15 +47,15 @@ public class DeckView : MonoBehaviour
 
     public void ClearHand()
     {
-        if ( deck == null )
-            return;
+        //if ( deck == null )
+        //    return;
         deck.Reset();
         foreach ( CardView card in fetchedCards.Values )
         {
             Destroy( card.Card );
         }
-        if ( fetchedCards == null )
-            return;
+        //if ( fetchedCards == null )
+        //    return;
         fetchedCards.Clear();
     }
 
@@ -87,6 +87,7 @@ public class DeckView : MonoBehaviour
         {
             foreach ( int cardIdx in deck.GetCards() )
             {
+
                 Vector3 offsetPosition = StartPosition + new Vector3( cardOffset * cardCount, 0f );
                 AddCard( offsetPosition, cardIdx, cardCount );
                 cardCount++;
@@ -101,7 +102,10 @@ public class DeckView : MonoBehaviour
             if ( !faceUp )
             {
                 CardModel model = fetchedCards[ cardIdx ].Card.GetComponent<CardModel>();
+                //if ( positionalIndex == 0 )
+                //    fetchedCards[ cardIdx ].IsFaceUp = true;
                 model.ToggleFace( fetchedCards[ cardIdx ].IsFaceUp );
+
             }
             return;
         }
@@ -128,8 +132,6 @@ public class DeckView : MonoBehaviour
         AddFetched( cardIdx, new CardView( card ) );
 
 
-
-        Debug.Log( "Hand Value = " + deck.HandValue() );
 
     }
 
