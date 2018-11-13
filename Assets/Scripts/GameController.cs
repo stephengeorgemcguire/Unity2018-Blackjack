@@ -203,7 +203,7 @@ public class GameController : MonoBehaviour
 
     public void Split()
     {
-        Dec
+        // TODO:
     }
 
     private void HandStatus()
