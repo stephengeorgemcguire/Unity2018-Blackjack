@@ -17,7 +17,7 @@ public class GameController : MonoBehaviour
 
     public Button HitButton;
     public Button HoldButton;
-    public Button PlayAgainButton;
+    public Button PlayButton;
     public Button DoubleDownButton;
     public Button SplitButton;
     public Button RaiseBet;
@@ -59,7 +59,7 @@ public class GameController : MonoBehaviour
         updateWagerDisplay();
         TogglePlayButtons( OFF );
         ToggleBetButtons( ON );
-        ToggleButton( PlayAgainButton, OFF );
+        ToggleButton( PlayButton, OFF );
     }
 
     #region Player Actions
@@ -85,7 +85,7 @@ public class GameController : MonoBehaviour
         {
             TogglePlayButtons( OFF );
             ToggleBetButtons( ON );
-            ToggleButton( PlayAgainButton, OFF );
+            ToggleButton( PlayButton, OFF );
             UpdateStats();
             return;
         }
@@ -93,7 +93,7 @@ public class GameController : MonoBehaviour
         HandStatus();
     }
 
-    private void ClearGame()
+    private void ResetGame()
     {
         ClearHands();
         ResetResults();
@@ -102,7 +102,7 @@ public class GameController : MonoBehaviour
     {
         TogglePlayButtons( ON );
         ToggleBetButtons( OFF );
-        ToggleButton( PlayAgainButton, OFF );
+        ToggleButton( PlayButton, OFF );
 
         PlayerBust = false;
     }
@@ -254,7 +254,7 @@ public class GameController : MonoBehaviour
         ToggleButton( HitButton, isInteractable );
         ToggleButton( HoldButton, isInteractable );
         ToggleButton( DoubleDownButton, isInteractable );
-        ToggleButton( PlayAgainButton, isInteractable );
+        ToggleButton( PlayButton, isInteractable );
         ToggleButton( SplitButton, isInteractable );
     }
 
@@ -422,12 +422,12 @@ public class GameController : MonoBehaviour
             Bank -= currentBet;
             updateBankDisplay();
             ToggleBetButtons( OFF );
-            ToggleButton( PlayAgainButton, ON );
-            ClearGame();
+            ToggleButton( PlayButton, ON );
+            ResetGame();
         }
         else
         {
-            ToggleButton( PlayAgainButton, OFF );
+            ToggleButton( PlayButton, OFF );
             return;
         }
     }
