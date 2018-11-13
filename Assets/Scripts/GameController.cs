@@ -33,9 +33,12 @@ public class GameController : MonoBehaviour
     public Text BankValue;
     public Text Wager;
     public Text WinningPct;
+    public Text ShuffleDeck;
+    public Text RunningTotals;
 
     private float BeginningPurse;
     private float Bank;
+    private float GameResults;
 
     public float Bet;
     private float currentBet;
@@ -51,6 +54,7 @@ public class GameController : MonoBehaviour
     {
         Bank = InitialBank;
         SetBetIncrement();
+        GameResults = 0;
         updateBankDisplay();
         updateWagerDisplay();
         TogglePlayButtons( OFF );
@@ -64,7 +68,12 @@ public class GameController : MonoBehaviour
     {
         InitializeDeal();
         if ( Deck.CardCount < 15 )
+        {
+            ShuffleDeck.text = "Shuffle";
+            new WaitForSeconds( 3f );
             Deck.Reset();
+            ShuffleDeck.text = "";
+        }
 
         DealHand();
 
@@ -78,6 +87,7 @@ public class GameController : MonoBehaviour
             TogglePlayButtons( OFF );
             ToggleBetButtons( ON );
             ToggleButton( PlayAgainButton, OFF );
+            UpdateStats();
             return;
         }
 
@@ -346,7 +356,12 @@ public class GameController : MonoBehaviour
         {
             if ( handsPlayed > 0 )
                 WinningPct.text = (((float)handsWon / (float)handsPlayed) * 100.00).ToString( "0.00" ) + "%";
-
+            GameResults = Bank - InitialBank;
+            RunningTotals.text = GameResults.ToString( "$0.00" );
+            if ( GameResults < 0 )
+                RunningTotals.color = Color.red;
+            else
+                RunningTotals.color = Color.green;
         }
         catch ( Exception ex )
         {
