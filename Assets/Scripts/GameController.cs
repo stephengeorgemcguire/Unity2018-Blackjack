@@ -20,17 +20,25 @@ public class GameController : MonoBehaviour
     public Button PlayAgainButton;
     public Button DoubleDownButton;
     public Button SplitButton;
+    public Button RaiseBet;
+    public Button LowerBet;
+    public Button PlaceBetButton;
+
+    public Dropdown BetIncrement;
+    private int increment;
 
     public Text PlayerScore;
     public Text DealerScore;
     public Text GameResult;
     public Text BankValue;
-    public Text CurrentBet;
+    public Text Wager;
     public Text WinningPct;
 
     private float BeginningPurse;
     private float Bank;
+
     public float Bet;
+    private float currentBet;
     public float InitialBank;
     private float HandResult;
 
@@ -42,7 +50,13 @@ public class GameController : MonoBehaviour
     private void Start()
     {
         Bank = InitialBank;
-        Play();
+        SetBetIncrement();
+        updateBankDisplay();
+        updateWagerDisplay();
+        TogglePlayButtons( OFF );
+        ToggleBetButtons( ON );
+        ToggleButton( PlayAgainButton, OFF );
+
     }
 
     #region Player Actions
@@ -54,7 +68,7 @@ public class GameController : MonoBehaviour
 
         DealHand();
 
-
+        // See if we can split the hand
         if ( !canSplit() )
             ToggleButton( SplitButton, OFF );
 
@@ -62,39 +76,44 @@ public class GameController : MonoBehaviour
         if ( IsBlackjack() )
         {
             TogglePlayButtons( OFF );
-            ToggleButton( PlayAgainButton, ON );
+            ToggleBetButtons( ON );
+            ToggleButton( PlayAgainButton, OFF );
             return;
         }
-        // See if we can split the hand
+
         HandStatus();
 
 
     }
 
-    private void InitializeDeal()
+    private void ClearGame()
     {
         ClearHands();
         ResetResults();
+
+    }
+    private void InitializeDeal()
+    {
+
         TogglePlayButtons( ON );
+        ToggleBetButtons( OFF );
         ToggleButton( PlayAgainButton, OFF );
 
+
         PlayerBust = false;
-        if ( Bank > 0 ) // If we have money in the bank
-        {
-            // If we can not cover the bet, use whatever is left in the bank
-            Bank = Bank < Bet ? Bank : Bank -= Bet;
-            updateBankDisplay();
-        }
-        else
-        {
-            ToggleButton( PlayAgainButton, OFF );
-            return;
-        }
+    }
 
 
+
+    private void ResetResults()
+    {
+        PlayerScore.text = "";
+        DealerScore.text = "";
+        GameResult.text = "";
 
 
     }
+
     private void DealHand()
     {
         try
@@ -156,11 +175,19 @@ public class GameController : MonoBehaviour
 
     public void DoubleDown()
     {
-        Bet += Bet;
-        Bank -= Bet;
-        updateBankDisplay();
-        Hit();    // Player gets one card
-        Hold();
+        if ( Bank >= Bet )
+        {
+            currentBet += Bet;
+            Wager.text = currentBet.ToString( "$0.00" );
+            Bank -= Bet;
+            updateBankDisplay();
+
+            Hit();    // Player gets one card
+            Hold();
+            //Wager.text = Bet.ToString( "$0.00" );
+        }
+        else
+            return;
     }
 
     public void Hold()
@@ -170,12 +197,13 @@ public class GameController : MonoBehaviour
         ShowDealerHand();
         StartCoroutine( DealerPlay() );
         //DealerPlay();
-        ToggleButton( PlayAgainButton, ON );
+        ToggleBetButtons( ON );
+
     }
 
     public void Split()
     {
-        // TODO:
+        Dec
     }
 
     private void HandStatus()
@@ -235,13 +263,16 @@ public class GameController : MonoBehaviour
         ToggleButton( SplitButton, isInteractable );
 
     }
-    private void ResetResults()
+
+    private void ToggleBetButtons( bool isInteractable )
     {
-        PlayerScore.text = "";
-        DealerScore.text = "";
-        GameResult.text = "";
-        CurrentBet.text = Bet.ToString();
+        ToggleButton( RaiseBet, isInteractable );
+        ToggleButton( LowerBet, isInteractable );
+        ToggleButton( PlaceBetButton, isInteractable );
+
+
     }
+
     private void ToggleView( int cardIdx )
     {
         DeckView cardView = Dealer.GetComponent<DeckView>();
@@ -353,7 +384,7 @@ public class GameController : MonoBehaviour
 
     private void Push()
     {
-        Bank += Bet;
+        Bank += currentBet;
         updateBankDisplay();
         handsPlayed--;
         GameResult.color = Color.white;
@@ -368,7 +399,7 @@ public class GameController : MonoBehaviour
 
     private void Win( float payOff = (float)2.0 )
     {
-        Bank += (Bet * payOff);
+        Bank += (currentBet * payOff);
         updateBankDisplay();
         handsWon++;
         GameResult.color = Color.green;
@@ -378,6 +409,52 @@ public class GameController : MonoBehaviour
     private void updateBankDisplay()
     {
         BankValue.text = Bank.ToString( "$0.00" );
+    }
+    #endregion
+
+    #region Betting
+
+    public void placeBet()
+    {
+
+        if ( Bank > 0 ) // If we have money in the bank
+        {
+            // If we can not cover the bet, use whatever is left in the bank
+            currentBet = Bank < Bet ? Bank : Bet;
+            Wager.text = currentBet.ToString( "$0.00" );
+            Bank -= currentBet;
+            updateBankDisplay();
+            ToggleBetButtons( OFF );
+            ToggleButton( PlayAgainButton, ON );
+            ClearGame();
+        }
+        else
+        {
+            ToggleButton( PlayAgainButton, OFF );
+            return;
+        }
+    }
+
+    private void updateWagerDisplay()
+    {
+        Wager.text = Bet.ToString( "$0.00" );
+    }
+    public void RaiseBetBy()
+    {
+        Bet += increment;
+        updateWagerDisplay();
+
+    }
+
+    public void LowerBetBy()
+    {
+        Bet -= increment;
+        updateWagerDisplay();
+    }
+
+    public void SetBetIncrement()
+    {
+        increment = Int32.Parse( BetIncrement.captionText.text );
     }
     #endregion
 }
