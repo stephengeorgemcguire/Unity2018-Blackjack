@@ -60,7 +60,6 @@ public class GameController : MonoBehaviour
         TogglePlayButtons( OFF );
         ToggleBetButtons( ON );
         ToggleButton( PlayAgainButton, OFF );
-
     }
 
     #region Player Actions
@@ -92,23 +91,18 @@ public class GameController : MonoBehaviour
         }
 
         HandStatus();
-
-
     }
 
     private void ClearGame()
     {
         ClearHands();
         ResetResults();
-
     }
     private void InitializeDeal()
     {
-
         TogglePlayButtons( ON );
         ToggleBetButtons( OFF );
         ToggleButton( PlayAgainButton, OFF );
-
 
         PlayerBust = false;
     }
@@ -120,8 +114,6 @@ public class GameController : MonoBehaviour
         PlayerScore.text = "";
         DealerScore.text = "";
         GameResult.text = "";
-
-
     }
 
     private void DealHand()
@@ -145,8 +137,6 @@ public class GameController : MonoBehaviour
     {
         try
         {
-
-
             if ( Player.deck == null )
                 return false;
 
@@ -168,17 +158,12 @@ public class GameController : MonoBehaviour
     {
         HitPlayer();
         ToggleButton( DoubleDownButton, OFF );
+        ToggleButton( SplitButton, OFF );
         HandStatus();
-
-
     }
     public void HitPlayer()
     {
-
         Player.Push( Deck.Pop() );
-
-
-
     }
 
 
@@ -271,7 +256,6 @@ public class GameController : MonoBehaviour
         ToggleButton( DoubleDownButton, isInteractable );
         ToggleButton( PlayAgainButton, isInteractable );
         ToggleButton( SplitButton, isInteractable );
-
     }
 
     private void ToggleBetButtons( bool isInteractable )
@@ -279,8 +263,6 @@ public class GameController : MonoBehaviour
         ToggleButton( RaiseBet, isInteractable );
         ToggleButton( LowerBet, isInteractable );
         ToggleButton( PlaceBetButton, isInteractable );
-
-
     }
 
     private void ToggleView( int cardIdx )
