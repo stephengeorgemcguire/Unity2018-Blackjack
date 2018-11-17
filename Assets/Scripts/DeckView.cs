@@ -24,8 +24,8 @@ public class DeckView : MonoBehaviour
 
         deck.AddCard += deck_AddCard;
         deck.RemoveCard += deck_RemoveCard;
-
     }
+
 
     private void deck_RemoveCard( object sender, CardEventArgs e )
     {
@@ -47,15 +47,12 @@ public class DeckView : MonoBehaviour
 
     public void ClearHand()
     {
-        //if ( deck == null )
-        //    return;
         deck.Reset();
         foreach ( CardView card in fetchedCards.Values )
         {
             Destroy( card.Card );
         }
-        //if ( fetchedCards == null )
-        //    return;
+
         fetchedCards.Clear();
     }
 
@@ -65,7 +62,6 @@ public class DeckView : MonoBehaviour
             return;
         fetchedCards[ cardIdx ].IsFaceUp = isFaceUp;
     }
-
 
 
     private void Update()

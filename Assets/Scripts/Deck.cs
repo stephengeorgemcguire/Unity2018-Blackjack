@@ -51,6 +51,7 @@ public class Deck : MonoBehaviour
         get { return deck == null ? 0 : deck.Count; }
     }
 
+
     public void CreateDeck()
     {
         deck.Clear();
@@ -76,6 +77,7 @@ public class Deck : MonoBehaviour
     {
         return cardIdx % 13;
     }
+
     public int HandValue()
     {
         int total = 0;
@@ -83,14 +85,12 @@ public class Deck : MonoBehaviour
 
         foreach ( int cardIdx in GetCards() )
         {
-
             int cardRank = GetCardRank( cardIdx );    // 13 cards in each suit
 
             if ( cardRank == 0 ) // Ace == 0
                 aces++;
             if ( cardRank < 10 ) // Ace - 9
                 cardRank += 1;
-            //else if ( cardRank < 13 )
             else // 10 - King
                 cardRank = 10;
 
@@ -122,41 +122,12 @@ public class Deck : MonoBehaviour
 
     }
 
-    //public Deck()
-    //{
-    //    deck = MakeADeck();
-    //}
 
 
     // Number of cards remaining in deck.
-    public int Count
-    {
-        get { return deck == null ? 0 : deck.Count; }
-    }
-
-    //public static void ShowDeck( List<CardModel> deck )
+    //public int Count
     //{
-    //    foreach ( CardModel card in deck )
-    //    {
-    //        Console.WriteLine( card );
-    //    }
-
-    //}
-
-
-
-
-
-    //public CardModel Pop( int cardIdx )
-    //{
-    //    card = deck[ cardIdx ];
-    //    deck.RemoveAt( cardIdx );
-    //    return card;
-    //}
-
-    //public void Push( Card card )
-    //{
-
+    //    get { return deck == null ? 0 : deck.Count; }
     //}
 
 }

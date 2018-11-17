@@ -8,6 +8,7 @@ public class GameController : MonoBehaviour
 {
 
     public Deck Player;
+    public Deck SplitHand;
     public Deck Dealer;
     public Deck Deck;
 
@@ -133,26 +134,7 @@ public class GameController : MonoBehaviour
         }
     }
 
-    private bool canSplit()
-    {
-        try
-        {
-            if ( Player.deck == null )
-                return false;
 
-            int card1 = Player.deck[ 0 ];
-            int card2 = Player.deck[ 1 ];
-
-            card1 = Player.GetCardRank( card1 );
-            card2 = Player.GetCardRank( card2 );
-
-            return (card1 == card2);
-        }
-        catch ( ApplicationException ex )
-        {
-            throw new ApplicationException( "GameController.cs - canSplit(): ", ex );
-        }
-    }
 
     public void Hit()
     {
@@ -191,14 +173,33 @@ public class GameController : MonoBehaviour
 
         ShowDealerHand();
         StartCoroutine( DealerPlay() );
-        //DealerPlay();
-        ToggleBetButtons( ON );
+
 
     }
 
+    private bool canSplit()
+    {
+        try
+        {
+            if ( Player.deck == null )
+                return false;
+
+            int card1 = Player.deck[ 0 ];
+            int card2 = Player.deck[ 1 ];
+
+            card1 = Player.GetCardRank( card1 );
+            card2 = Player.GetCardRank( card2 );
+
+            return (card1 == card2);
+        }
+        catch ( ApplicationException ex )
+        {
+            throw new ApplicationException( "GameController.cs - canSplit(): ", ex );
+        }
+    }
     public void Split()
     {
-        // TODO:
+
     }
 
     private void HandStatus()
@@ -267,8 +268,8 @@ public class GameController : MonoBehaviour
 
     private void ToggleView( int cardIdx )
     {
-        DeckView cardView = Dealer.GetComponent<DeckView>();
-        cardView.Toggle( cardIdx, true );
+        DeckView deckView = Dealer.GetComponent<DeckView>();
+        deckView.Toggle( cardIdx, true );
     }
 
     private bool IsBlackjack()
@@ -328,6 +329,7 @@ public class GameController : MonoBehaviour
     {
         DetermineWinner();
         UpdateStats();
+        ToggleBetButtons( ON );
     }
     #endregion
 
